@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>VetDose Pro — محاسبه‌گر دوز داروهای دامپزشکی</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=3) }}"/>
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#2dd4a7"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="VetDose Pro"/>
+  <link rel="apple-touch-icon" href="/static/icon_192.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon_192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon_512.png"/>
+</head>
+<body data-lang="fa">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><i class="ti ti-vaccine" aria-hidden="true"></i></div>
+    <div class="brand-text">
+      <h1>VetDose <span>Pro</span></h1>
+      <p data-fa="محاسبه‌گر دوز داروهای دامپزشکی" data-en="Veterinary Drug Dosage Calculator">محاسبه‌گر دوز داروهای دامپزشکی</p>
+    </div>
+  </div>
+  <button id="langToggle" class="lang-toggle">EN / فا</button>
+</header>
+
+<main class="container">
+
+  <!-- ── Search ── -->
+  <section class="card search-card">
+    <label class="field-label" data-fa="جستجوی دارو" data-en="Search drug">جستجوی دارو</label>
+    <div class="search-wrap">
+      <i class="ti ti-search search-icon" aria-hidden="true"></i>
+      <input type="text" id="drugSearch" autocomplete="off"
+        data-fa-ph="نام دارو را به انگلیسی تایپ کنید..."
+        data-en-ph="Type drug name in English..."
+        placeholder="نام دارو را به انگلیسی تایپ کنید..."/>
+      <button id="clearSearch" class="clear-btn" hidden>&times;</button>
+    </div>
+    <div id="suggestions" class="suggestions" hidden></div>
+    <p class="hint" data-fa="۵۲۰ داروی مرجع — Plumb's Veterinary Drug Handbook ویرایش دهم"
+       data-en="520 drugs — Plumb's Veterinary Drug Handbook 10th Edition">
+       ۵۲۰ داروی مرجع — Plumb's Veterinary Drug Handbook ویرایش دهم</p>
+  </section>
+
+  <!-- ── Drug panel ── -->
+  <section id="drugPanel" hidden>
+
+    <!-- Header -->
+    <div class="card drug-header-card">
+      <h2 id="drugName"></h2>
+      <p id="drugClass" class="drug-class"></p>
+    </div>
+
+    <!-- Calculator -->
+    <div class="card calc-card">
+      <h3 class="section-title">
+        <span data-fa="محاسبه دوز" data-en="Dose calculator">محاسبه دوز</span>
+      </h3>
+
+      <!-- Species + Weight -->
+      <div class="calc-grid">
+        <div class="calc-field">
+          <label data-fa="گونه حیوان" data-en="Species">گونه حیوان</label>
+          <select id="speciesSelect"></select>
+        </div>
+        <div class="calc-field">
+          <label data-fa="وزن (کیلوگرم)" data-en="Weight (kg)">وزن (کیلوگرم)</label>
+          <input type="number" id="weightInput" min="0.01" max="2000" step="0.01" placeholder="0.0"/>
+        </div>
+      </div>
+
+      <!-- Route buttons (always visible) -->
+      <div class="calc-field">
+        <label data-fa="روش تجویز را انتخاب کنید" data-en="Select route of administration">روش تجویز را انتخاب کنید</label>
+        <div id="routeButtons" class="route-buttons"></div>
+        <p class="route-hint"
+           data-fa="دکمه‌های خاکستری = دوز عددی در پلامبز ثبت نشده"
+           data-en="Grey buttons = no numeric dose in Plumb's for this route">
+           دکمه‌های خاکستری = دوز عددی در پلامبز ثبت نشده</p>
+      </div>
+
+      <!-- Dose section (hidden until route chosen) -->
+      <div id="doseSection" style="display:none;">
+        <div class="calc-field">
+          <label data-fa="انتخاب دوز / مورد مصرف" data-en="Select dose / indication">انتخاب دوز / مورد مصرف</label>
+          <select id="doseSelect"></select>
+        </div>
+
+        <div class="calc-field">
+          <label data-fa="غلظت دارو (mg/ml)" data-en="Concentration (mg/ml)">غلظت دارو (mg/ml)</label>
+          <input type="number" id="concInput" min="0.01" step="0.01"
+            data-fa-ph="وارد کنید تا حجم تزریق محاسبه شود"
+            data-en-ph="Enter to calculate injection volume"
+            placeholder="وارد کنید تا حجم تزریق محاسبه شود"/>
+        </div>
+
+        <!-- Results -->
+        <div id="resultBox" class="result-box" hidden>
+          <div class="result-item">
+            <span class="result-label" data-fa="دوز کل" data-en="Total dose">دوز کل</span>
+            <span class="result-value" id="totalDose"></span>
+          </div>
+          <div class="result-item blue" id="volumeResult" hidden>
+            <span class="result-label" data-fa="حجم تزریق" data-en="Injection volume">حجم تزریق</span>
+            <span class="result-value" id="totalVolume"></span>
+          </div>
+        </div>
+        <p class="calc-note" id="doseNote"></p>
+      </div>
+    </div>
+
+    <!-- Info tabs -->
+    <div class="card info-card">
+      <div class="tabs">
+        <button class="tab active" data-tab="dosage"      data-fa="متن کامل دوز"  data-en="Full dosage">متن کامل دوز</button>
+        <button class="tab"        data-tab="precautions" data-fa="احتیاط‌ها"     data-en="Precautions">احتیاط‌ها</button>
+        <button class="tab"        data-tab="adverse"     data-fa="عوارض جانبی"   data-en="Adverse effects">عوارض جانبی</button>
+      </div>
+      <div id="tab-dosage"      class="tab-content"></div>
+      <div id="tab-precautions" class="tab-content" hidden></div>
+      <div id="tab-adverse"     class="tab-content" hidden></div>
+    </div>
+
+  </section>
+
+  <!-- Empty state -->
+  <section id="emptyState" class="empty-state">
+    <i class="ti ti-paw" aria-hidden="true" style="font-size:52px;color:var(--accent);display:block;margin-bottom:16px;"></i>
+    <h2 data-fa="جستجوی دوز داروهای دامپزشکی" data-en="Search veterinary drug dosages">جستجوی دوز داروهای دامپزشکی</h2>
+    <p data-fa="نام دارو را به انگلیسی تایپ کنید" data-en="Type a drug name in English">نام دارو را به انگلیسی تایپ کنید</p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-author">
+    <span data-fa="ساخته و طراحی شده توسط" data-en="Designed & developed by">ساخته و طراحی شده توسط</span>
+    <strong data-fa="دکتر مهدیار رمزگویان" data-en="Dr. Mahdiyar Ramzgooyan">دکتر مهدیار رمزگویان</strong>
+  </div>
+  <p class="footer-source"
+     data-fa="بر اساس مرجع Plumb's Veterinary Drug Handbook — ویرایش دهم"
+     data-en="Based on Plumb's Veterinary Drug Handbook — 10th Edition">
+     بر اساس مرجع Plumb's Veterinary Drug Handbook — ویرایش دهم</p>
+</footer>
+
+<script src="{{ url_for('static', filename='app.js', v=3) }}"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', {scope: '/'});
+    }
+  </script>
+</body>
+</html>
